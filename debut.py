@@ -1,4 +1,4 @@
-with open("Projets\\FromZeroToHeroGPT\\input.txt", "r") as f:
+with open("input.txt", "r") as f:
     text=f.read()
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
@@ -17,18 +17,39 @@ decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integ
 import torch # we use PyTorch: https://pytorch.org
 data = torch.tensor(encode(text), dtype=torch.long)
 print(data.shape, data.dtype)
-print(data[:1000]) # the 1000 characters we looked at earier will to the GPT look like this
+print(data[:1000]) 
 
 #split data
 n = int(0.9*len(data))
 train = data[:n]
 test = data[n:]
 
-block_size = 8
+block_size = 8 #chunk maximum size
 
 x = train[:block_size]
 y = train[1:block_size+1]
-for t in range(block_size):
-    context = x[:t+1]
-    target = y[t]
-    print(f'context={context} qui a pour target {target}')
+
+#for t in range(block_size):
+#    context = x[:t+1]
+#    target = y[t]
+#    print(f'context={context} qui a pour target {target}')
+ 
+batch_size = 4 #how many independant sequences will we process in parallel
+
+torch.manual_seed(1337)
+
+def get_batch(split):
+    #generate a small batch of data of inputs x and targets y
+    data = train if split == 'train' else test
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack( [data[ i+1:i+block_size+1] for i in ix])
+    return x, y
+
+xb, yb = get_batch('train')
+print('inputs:')
+print(xb.shape)
+print(xb)
+print(yb.shape, yb)
+
+
